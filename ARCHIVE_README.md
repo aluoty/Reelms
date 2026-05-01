@@ -1,4 +1,4 @@
-# Fishing Game (Java UI + C++ Engine)
+# Fishing Game Scratch (Java UI + C++ Engine)
 
 This is a base starter project for a Fishing Game:
 
