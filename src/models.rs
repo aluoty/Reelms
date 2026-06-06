@@ -32,12 +32,16 @@ pub mod palette {
     pub const MOON_BLUE: Color = Color::srgb(0.62, 0.78, 0.95);
     pub const MOON_BLOOD: Color = Color::srgb(0.88, 0.28, 0.22);
 
-    pub const UI_PANEL: Color = Color::srgba(0.10, 0.12, 0.16, 0.82);
-    pub const UI_PANEL_DARK: Color = Color::srgba(0.06, 0.08, 0.10, 0.88);
+    pub const UI_PANEL: Color = Color::srgba(0.10, 0.12, 0.16, 0.92);
+    pub const UI_PANEL_DARK: Color = Color::srgba(0.06, 0.08, 0.10, 0.95);
+    pub const UI_BORDER: Color = Color::srgba(0.38, 0.52, 0.68, 0.45);
     pub const UI_ACCENT: Color = Color::srgb(0.32, 0.58, 0.78);
     pub const UI_ACCENT_HOVER: Color = Color::srgb(0.40, 0.68, 0.88);
+    pub const UI_PRIMARY: Color = Color::srgb(0.22, 0.62, 0.48);
+    pub const UI_PRIMARY_HOVER: Color = Color::srgb(0.28, 0.72, 0.56);
     pub const UI_TEXT: Color = Color::srgb(0.94, 0.96, 0.98);
     pub const UI_TEXT_DIM: Color = Color::srgb(0.72, 0.76, 0.82);
+    pub const UI_DISABLED: Color = Color::srgb(0.30, 0.32, 0.36);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -485,14 +489,14 @@ pub fn location_theme(location: &str, weather: &str, moon: &str) -> LocationThem
 
     let mut pieces = vec![
         SceneryPiece {
-            mesh: quad_mesh(980.0, 180.0),
+            mesh: quad_mesh(1050.0, 180.0),
             color: water,
             translation: Vec3::new(0.0, -140.0, -5.0),
             rotation: 0.0,
             scale: Vec3::ONE,
         },
         SceneryPiece {
-            mesh: quad_mesh(980.0, 120.0),
+            mesh: quad_mesh(1050.0, 120.0),
             color: ground,
             translation: Vec3::new(0.0, -50.0, -4.0),
             rotation: 0.0,
@@ -572,7 +576,7 @@ pub fn location_theme(location: &str, weather: &str, moon: &str) -> LocationThem
             pieces.extend(rock_cluster(-200.0, -45.0));
             pieces.extend(rock_cluster(40.0, -50.0));
             pieces.push(SceneryPiece {
-                mesh: quad_mesh(980.0, 40.0),
+                mesh: quad_mesh(1050.0, 40.0),
                 color: Color::srgba(0.95, 0.42, 0.12, 0.25),
                 translation: Vec3::new(0.0, -175.0, 3.0),
                 rotation: 0.0,

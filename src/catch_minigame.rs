@@ -179,22 +179,22 @@ pub fn setup_catch_minigame(
 
     commands.spawn((
         CatchWaterWorld,
-        Mesh2d(meshes.add(Rectangle::new(980.0, 280.0))),
+        Mesh2d(meshes.add(Rectangle::new(1050.0, 300.0))),
         MeshMaterial2d(materials.add(ColorMaterial::from_color(water_color))),
-        Transform::from_xyz(0.0, -80.0, -2.0),
+        Transform::from_xyz(0.0, -40.0, -2.0),
     ));
     commands.spawn((
         CatchWaterWorld,
-        Mesh2d(meshes.add(Rectangle::new(980.0, 60.0))),
+        Mesh2d(meshes.add(Rectangle::new(1050.0, 70.0))),
         MeshMaterial2d(materials.add(ColorMaterial::from_color(palette::GRASS))),
-        Transform::from_xyz(0.0, 110.0, -1.0),
+        Transform::from_xyz(0.0, 130.0, -1.0),
     ));
 
     let rod_entity = commands
         .spawn((
             CatchRodSprite,
             CatchWaterWorld,
-            Transform::from_xyz(-320.0, -40.0, 3.0).with_rotation(Quat::from_rotation_z(-0.18)),
+            Transform::from_xyz(-340.0, 0.0, 3.0).with_rotation(Quat::from_rotation_z(-0.18)),
             Visibility::default(),
         ))
         .id();
@@ -216,7 +216,7 @@ pub fn setup_catch_minigame(
         .spawn((
             CatchFishSprite,
             CatchWaterWorld,
-            Transform::from_xyz(-180.0, -60.0, 4.0),
+            Transform::from_xyz(-200.0, -20.0, 4.0),
             Visibility::default(),
         ))
         .id();
@@ -251,115 +251,132 @@ pub fn setup_catch_minigame(
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.06, 0.08, 0.10, 0.55)),
         ))
         .with_children(|root| {
-            root.spawn((
-                Text::new(format!("Pulling {} {}...", fish.rarity, fish.species)),
-                TextFont {
-                    font_size: 26.0,
-                    ..default()
-                },
-                TextColor(palette::UI_TEXT),
-                Node {
-                    margin: UiRect::all(Val::Px(12.0)),
-                    ..default()
-                },
-            ));
+            root.spawn(Node {
+                flex_grow: 1.0,
+                width: Val::Percent(100.0),
+                min_height: Val::Px(220.0),
+                ..default()
+            });
 
-            root.spawn((
-                Text::new("Press [Pull Now] or SPACE when marker is in GREEN."),
-                TextFont {
-                    font_size: 16.0,
-                    ..default()
-                },
-                TextColor(palette::UI_TEXT_DIM),
-                Node {
-                    margin: UiRect::horizontal(Val::Px(12.0)),
-                    ..default()
-                },
-            ));
-
-            root.spawn((
-                CatchBarRoot,
-                Node {
-                    width: Val::Percent(90.0),
-                    height: Val::Px(60.0),
-                    margin: UiRect::all(Val::Px(16.0)),
-                    align_self: AlignSelf::Center,
-                    ..default()
-                },
-            ))
-            .with_children(|bar| {
-                bar.spawn((
-                    CatchYellowZone,
+            root
+                .spawn((
                     Node {
                         width: Val::Percent(100.0),
-                        height: Val::Px(44.0),
+                        flex_direction: FlexDirection::Column,
+                        padding: UiRect::all(Val::Px(14.0)),
+                        row_gap: Val::Px(10.0),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.88, 0.71, 0.14)),
-                ));
-                bar.spawn((
-                    CatchGreenZone,
-                    Node {
-                        position_type: PositionType::Absolute,
-                        height: Val::Px(44.0),
-                        top: Val::Px(8.0),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.16, 0.68, 0.26)),
-                ));
-                bar.spawn((
-                    CatchMarker,
-                    Node {
-                        position_type: PositionType::Absolute,
-                        width: Val::Px(4.0),
-                        height: Val::Px(62.0),
-                        top: Val::Px(0.0),
-                        ..default()
-                    },
-                    BackgroundColor(Color::BLACK),
-                ));
-            });
-
-            root.spawn((
-                Node {
-                    width: Val::Percent(90.0),
-                    margin: UiRect::all(Val::Px(8.0)),
-                    justify_content: JustifyContent::SpaceBetween,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-            ))
-            .with_children(|row| {
-                row.spawn((
-                    Text::new("Catch Progress: 45%"),
-                    TextFont {
-                        font_size: 20.0,
-                        ..default()
-                    },
-                    TextColor(palette::UI_TEXT),
-                    CatchProgressLabel,
-                ));
-                row.spawn((
-                    Button,
-                    Node {
-                        padding: UiRect::axes(Val::Px(16.0), Val::Px(10.0)),
-                        ..default()
-                    },
-                    BackgroundColor(palette::UI_ACCENT),
-                    PullNowButton,
+                    BackgroundColor(palette::UI_PANEL),
+                    BorderColor(palette::UI_BORDER),
                 ))
-                .with_child((
-                    Text::new("Pull Now"),
-                    TextFont {
-                        font_size: 18.0,
-                        ..default()
-                    },
-                    TextColor(palette::UI_TEXT),
-                ));
-            });
+                .with_children(|panel| {
+                    panel
+                        .spawn(Node {
+                            width: Val::Percent(100.0),
+                            flex_direction: FlexDirection::Row,
+                            justify_content: JustifyContent::SpaceBetween,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        })
+                        .with_children(|header| {
+                            header.spawn((
+                                Text::new(format!("{} {}", fish.rarity, fish.species)),
+                                TextFont {
+                                    font_size: 22.0,
+                                    ..default()
+                                },
+                                TextColor(palette::UI_TEXT),
+                            ));
+                            header
+                                .spawn((
+                                    Button,
+                                    Node {
+                                        padding: UiRect::axes(Val::Px(20.0), Val::Px(10.0)),
+                                        border: UiRect::all(Val::Px(1.0)),
+                                        ..default()
+                                    },
+                                    BackgroundColor(palette::UI_PRIMARY),
+                                    BorderColor(palette::UI_BORDER),
+                                    PullNowButton,
+                                ))
+                                .with_child((
+                                    Text::new("Pull Now"),
+                                    TextFont {
+                                        font_size: 16.0,
+                                        ..default()
+                                    },
+                                    TextColor(palette::UI_TEXT),
+                                ));
+                        });
+
+                    panel.spawn((
+                        Text::new("Press Pull Now or SPACE when the marker is in the green zone."),
+                        TextFont {
+                            font_size: 14.0,
+                            ..default()
+                        },
+                        TextColor(palette::UI_TEXT_DIM),
+                    ));
+
+                    panel
+                        .spawn((
+                            CatchBarRoot,
+                            Node {
+                                width: Val::Percent(100.0),
+                                height: Val::Px(52.0),
+                                border: UiRect::all(Val::Px(1.0)),
+                                ..default()
+                            },
+                            BackgroundColor(palette::UI_PANEL_DARK),
+                            BorderColor(palette::UI_BORDER),
+                        ))
+                        .with_children(|bar| {
+                            bar.spawn((
+                                CatchYellowZone,
+                                Node {
+                                    width: Val::Percent(100.0),
+                                    height: Val::Px(36.0),
+                                    top: Val::Px(8.0),
+                                    ..default()
+                                },
+                                BackgroundColor(Color::srgb(0.82, 0.66, 0.18)),
+                            ));
+                            bar.spawn((
+                                CatchGreenZone,
+                                Node {
+                                    position_type: PositionType::Absolute,
+                                    height: Val::Px(36.0),
+                                    top: Val::Px(8.0),
+                                    ..default()
+                                },
+                                BackgroundColor(Color::srgb(0.18, 0.72, 0.32)),
+                            ));
+                            bar.spawn((
+                                CatchMarker,
+                                Node {
+                                    position_type: PositionType::Absolute,
+                                    width: Val::Px(5.0),
+                                    height: Val::Px(52.0),
+                                    top: Val::Px(0.0),
+                                    ..default()
+                                },
+                                BackgroundColor(palette::UI_TEXT),
+                            ));
+                        });
+
+                    panel.spawn((
+                        Text::new("Catch Progress: 45%"),
+                        TextFont {
+                            font_size: 18.0,
+                            ..default()
+                        },
+                        TextColor(palette::UI_TEXT),
+                        CatchProgressLabel,
+                    ));
+                });
         });
 }
 
@@ -405,11 +422,11 @@ pub fn catch_minigame_update(
         node.left = Val::Percent((50.0 - green_pct / 2.0).max(0.0));
     }
 
-    let fish_x = -280.0 + (minigame.marker_position * 420.0) as f32;
+    let fish_x = -300.0 + (minigame.marker_position * 460.0) as f32;
     let fish_bob = (minigame.tick as f32 * 0.28).sin() * 8.0;
     for mut transform in transforms.p0().iter_mut() {
         transform.translation.x = fish_x;
-        transform.translation.y = -60.0 + fish_bob;
+        transform.translation.y = -20.0 + fish_bob;
         transform.rotation = Quat::from_rotation_z(
             (minigame.marker_position as f32 - 0.5) * 0.35 + (minigame.tick as f32 * 0.05).sin() * 0.08,
         );
@@ -419,7 +436,7 @@ pub fn catch_minigame_update(
     let rod_tilt = pull_tilt + (minigame.marker_position as f32 - 0.5) * 0.12;
     for mut transform in transforms.p1().iter_mut() {
         transform.rotation = Quat::from_rotation_z(rod_tilt);
-        transform.translation.y = -40.0 + minigame.pull_frames as f32 * 0.4;
+        transform.translation.y = 0.0 + minigame.pull_frames as f32 * 0.4;
     }
 
     for mut text in progress_q.iter_mut() {
@@ -428,10 +445,14 @@ pub fn catch_minigame_update(
 
     let pull_pressed = keyboard.just_pressed(KeyCode::Space);
     let mut button_pull = false;
-    for (interaction, _) in pull_q.iter_mut() {
+    for (interaction, mut bg) in pull_q.iter_mut() {
         if *interaction == Interaction::Pressed {
             button_pull = true;
         }
+        bg.0 = match *interaction {
+            Interaction::Hovered | Interaction::Pressed => palette::UI_PRIMARY_HOVER,
+            Interaction::None => palette::UI_PRIMARY,
+        };
     }
 
     if (pull_pressed || button_pull) && !minigame.finished {

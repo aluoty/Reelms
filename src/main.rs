@@ -21,7 +21,7 @@ use scene::{animate_water_shimmer, refresh_world_scene, setup_world_scene, Scene
 use ui::{
     cast_tick, check_startup_flow, cleanup_overlay, handle_main_buttons, handle_overlay_buttons,
     refresh_hud, setup_character_select, setup_guide, setup_location_select, setup_main_ui,
-    setup_shop, setup_trade_trader_select,
+    setup_shop, setup_trade_trader_select, update_button_hover,
 };
 use world::GameWorld;
 
@@ -45,7 +45,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Reelms — Low Poly Fishing".to_string(),
-                resolution: (980., 560.).into(),
+                resolution: (1024., 600.).into(),
                 ..default()
             }),
             ..default()
@@ -64,6 +64,7 @@ fn main() {
                 animate_water_shimmer,
                 handle_main_buttons,
                 cast_tick,
+                update_button_hover,
             )
                 .chain()
                 .run_if(in_state(GameScreen::Main)),
@@ -75,7 +76,7 @@ fn main() {
         .add_systems(OnEnter(GameScreen::TradeTraderSelect), setup_trade_trader_select)
         .add_systems(
             Update,
-            (handle_overlay_buttons,)
+            (handle_overlay_buttons, update_button_hover)
                 .run_if(
                     in_state(GameScreen::CharacterSelect)
                         .or(in_state(GameScreen::Guide))
@@ -95,7 +96,7 @@ fn main() {
         .add_systems(OnEnter(GameScreen::Catching), setup_catch_minigame)
         .add_systems(
             Update,
-            (catch_minigame_update,).run_if(in_state(GameScreen::Catching)),
+            (catch_minigame_update, update_button_hover).run_if(in_state(GameScreen::Catching)),
         )
         .add_systems(OnExit(GameScreen::Catching), cleanup_catch_minigame)
         .run();

@@ -87,7 +87,7 @@ fn spawn_scene(
         .with_children(|parent| {
             parent.spawn((
                 SkyBackdrop,
-                Mesh2d(meshes.add(Rectangle::new(1020.0, 620.0))),
+                Mesh2d(meshes.add(Rectangle::new(1100.0, 660.0))),
                 MeshMaterial2d(materials.add(ColorMaterial::from_color(theme.sky))),
                 Transform::from_xyz(0.0, 0.0, -20.0),
             ));

@@ -6,6 +6,9 @@ use crate::save::{load_progress, save_progress, SAVE_PATH};
 use crate::trader::TraderNpc;
 use crate::world::{GameWorld, MAX_STAMINA};
 
+const PANEL_PADDING: f32 = 10.0;
+const PANEL_GAP: f32 = 8.0;
+
 #[derive(Component)]
 pub struct HudRoot;
 
@@ -26,6 +29,9 @@ pub struct LogLabel;
 
 #[derive(Component)]
 pub struct ActionButton(pub Action);
+
+#[derive(Component)]
+pub struct PrimaryActionButton;
 
 #[derive(Clone, Copy)]
 pub enum Action {
@@ -72,78 +78,163 @@ pub fn setup_main_ui(mut commands: Commands, mut world: ResMut<GameWorld>, mut r
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
-                padding: UiRect::all(Val::Px(12.0)),
-                row_gap: Val::Px(6.0),
                 ..default()
             },
-            BackgroundColor(palette::UI_PANEL),
         ))
         .with_children(|root| {
-            spawn_text(root, "Reelms", 28.0, palette::UI_TEXT);
-            spawn_text(root, "Low Poly Fishing RPG", 14.0, palette::UI_TEXT_DIM);
-            root.spawn((
-                StatusLabel,
-                text_bundle("Ready to fish.", 18.0),
-            ));
-            root.spawn((StatsLabel, text_bundle("", 15.0)));
-            root.spawn((WorldLabel, text_bundle("", 14.0)));
-            root.spawn((RodLabel, text_bundle("", 14.0)));
+            root.spawn(Node {
+                flex_grow: 1.0,
+                width: Val::Percent(100.0),
+                min_height: Val::Px(180.0),
+                ..default()
+            });
 
-            root.spawn((
-                Node {
-                    flex_grow: 1.0,
-                    width: Val::Percent(100.0),
-                    overflow: Overflow::clip(),
-                    border: UiRect::all(Val::Px(1.0)),
-                    padding: UiRect::all(Val::Px(8.0)),
-                    ..default()
-                },
-                BackgroundColor(palette::UI_PANEL_DARK),
-            ))
-            .with_children(|log_panel| {
-                log_panel.spawn((
-                    LogLabel,
-                    Text::new("Catch log:\n"),
-                    TextFont {
-                        font_size: 14.0,
-                        ..default()
-                    },
-                    TextColor(palette::UI_TEXT_DIM),
-                    Node {
+            root
+                .spawn(panel_node(FlexDirection::Column, Some(PANEL_GAP)))
+                .with_children(|dock| {
+                    dock.spawn(Node {
                         width: Val::Percent(100.0),
+                        flex_direction: FlexDirection::Row,
+                        justify_content: JustifyContent::SpaceBetween,
+                        align_items: AlignItems::Center,
+                        column_gap: Val::Px(12.0),
                         ..default()
-                    },
-                ));
-            });
+                    })
+                    .with_children(|header| {
+                        header
+                            .spawn(Node {
+                                flex_direction: FlexDirection::Column,
+                                row_gap: Val::Px(2.0),
+                                ..default()
+                            })
+                            .with_children(|titles| {
+                                spawn_text(titles, "Reelms", 26.0, palette::UI_TEXT);
+                                spawn_text(
+                                    titles,
+                                    "Low Poly Fishing RPG",
+                                    13.0,
+                                    palette::UI_TEXT_DIM,
+                                );
+                            });
+                        spawn_primary_button(header, "Cast Line", Action::Cast);
+                    });
 
-            root.spawn((
-                Node {
-                    width: Val::Percent(100.0),
-                    flex_wrap: FlexWrap::Wrap,
-                    justify_content: JustifyContent::FlexEnd,
-                    column_gap: Val::Px(6.0),
-                    row_gap: Val::Px(6.0),
-                    ..default()
-                },
-            ))
-            .with_children(|actions| {
-                for (label, action) in [
-                    ("Shop", Action::Shop),
-                    ("Sell Inventory", Action::Sell),
-                    ("Trade Offer", Action::Trade),
-                    ("New Trade Offer", Action::NewTrade),
-                    ("Locations", Action::Locations),
-                    ("Rest (+25)", Action::Rest),
-                    ("Save", Action::Save),
-                    ("Cast Line", Action::Cast),
-                ] {
-                    spawn_action_button(actions, label, action);
-                }
-            });
+                    dock.spawn((StatusLabel, text_bundle("Ready to fish.", 16.0, false)));
+
+                    dock.spawn(Node {
+                        width: Val::Percent(100.0),
+                        flex_direction: FlexDirection::Row,
+                        column_gap: Val::Px(PANEL_GAP),
+                        ..default()
+                    })
+                    .with_children(|columns| {
+                        columns
+                            .spawn(inset_panel())
+                            .with_children(|panel| {
+                                spawn_text(panel, "Stats", 13.0, palette::UI_TEXT_DIM);
+                                panel.spawn((StatsLabel, text_bundle("", 14.0, false)));
+                            });
+                        columns
+                            .spawn(inset_panel())
+                            .with_children(|panel| {
+                                spawn_text(panel, "World", 13.0, palette::UI_TEXT_DIM);
+                                panel.spawn((WorldLabel, text_bundle("", 13.0, false)));
+                                panel.spawn((
+                                    RodLabel,
+                                    text_bundle("", 13.0, false),
+                                ));
+                            });
+                    });
+
+                    dock.spawn((
+                        Node {
+                            width: Val::Percent(100.0),
+                            min_height: Val::Px(88.0),
+                            max_height: Val::Px(120.0),
+                            overflow: Overflow::clip_y(),
+                            ..default()
+                        },
+                        inset_panel_inner(),
+                    ))
+                    .with_children(|log_panel| {
+                        spawn_text(log_panel, "Catch Log", 13.0, palette::UI_TEXT_DIM);
+                        log_panel.spawn((
+                            LogLabel,
+                            Text::new(""),
+                            TextFont {
+                                font_size: 13.0,
+                                ..default()
+                            },
+                            TextColor(palette::UI_TEXT_DIM),
+                            Node {
+                                width: Val::Percent(100.0),
+                                ..default()
+                            },
+                        ));
+                    });
+
+                    dock.spawn(Node {
+                        width: Val::Percent(100.0),
+                        flex_wrap: FlexWrap::Wrap,
+                        justify_content: JustifyContent::FlexStart,
+                        column_gap: Val::Px(6.0),
+                        row_gap: Val::Px(6.0),
+                        ..default()
+                    })
+                    .with_children(|actions| {
+                        for (label, action) in [
+                            ("Shop", Action::Shop),
+                            ("Sell All", Action::Sell),
+                            ("Trade", Action::Trade),
+                            ("New Offer", Action::NewTrade),
+                            ("Locations", Action::Locations),
+                            ("Rest", Action::Rest),
+                            ("Save", Action::Save),
+                        ] {
+                            spawn_action_button(actions, label, action);
+                        }
+                    });
+                });
         });
 }
 
-fn text_bundle(content: &str, size: f32) -> impl Bundle {
+fn panel_node(direction: FlexDirection, row_gap: Option<f32>) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.0),
+            flex_direction: direction,
+            padding: UiRect::all(Val::Px(PANEL_PADDING)),
+            row_gap: row_gap.map(Val::Px).unwrap_or(Val::Px(0.0)),
+            column_gap: Val::Px(PANEL_GAP),
+            ..default()
+        },
+        BackgroundColor(palette::UI_PANEL),
+        BorderColor(palette::UI_BORDER),
+    )
+}
+
+fn inset_panel() -> impl Bundle {
+    (
+        Node {
+            flex_grow: 1.0,
+            flex_basis: Val::Percent(50.0),
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::all(Val::Px(8.0)),
+            row_gap: Val::Px(4.0),
+            ..default()
+        },
+        inset_panel_inner(),
+    )
+}
+
+fn inset_panel_inner() -> impl Bundle {
+    (
+        BackgroundColor(palette::UI_PANEL_DARK),
+        BorderColor(palette::UI_BORDER),
+    )
+}
+
+fn text_bundle(content: &str, size: f32, full_width: bool) -> impl Bundle {
     (
         Text::new(content.to_string()),
         TextFont {
@@ -152,7 +243,11 @@ fn text_bundle(content: &str, size: f32) -> impl Bundle {
         },
         TextColor(palette::UI_TEXT),
         Node {
-            width: Val::Percent(100.0),
+            width: if full_width {
+                Val::Percent(100.0)
+            } else {
+                Val::Auto
+            },
             ..default()
         },
     )
@@ -175,19 +270,62 @@ fn spawn_action_button(parent: &mut ChildSpawnerCommands, label: &str, action: A
             Button,
             ActionButton(action),
             Node {
-                padding: UiRect::axes(Val::Px(10.0), Val::Px(8.0)),
+                padding: UiRect::axes(Val::Px(12.0), Val::Px(7.0)),
+                border: UiRect::all(Val::Px(1.0)),
                 ..default()
             },
             BackgroundColor(palette::UI_ACCENT),
+            BorderColor(palette::UI_BORDER),
         ))
         .with_child((
             Text::new(label.to_string()),
             TextFont {
-                font_size: 15.0,
+                font_size: 14.0,
                 ..default()
             },
             TextColor(palette::UI_TEXT),
         ));
+}
+
+fn spawn_primary_button(parent: &mut ChildSpawnerCommands, label: &str, action: Action) {
+    parent
+        .spawn((
+            Button,
+            ActionButton(action),
+            PrimaryActionButton,
+            Node {
+                padding: UiRect::axes(Val::Px(22.0), Val::Px(12.0)),
+                border: UiRect::all(Val::Px(1.0)),
+                ..default()
+            },
+            BackgroundColor(palette::UI_PRIMARY),
+            BorderColor(palette::UI_BORDER),
+        ))
+        .with_child((
+            Text::new(label.to_string()),
+            TextFont {
+                font_size: 17.0,
+                ..default()
+            },
+            TextColor(palette::UI_TEXT),
+        ));
+}
+
+fn with_overlay_panel(parent: &mut ChildSpawnerCommands, build: impl FnOnce(&mut ChildSpawnerCommands)) {
+    parent
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(Val::Px(22.0)),
+                row_gap: Val::Px(10.0),
+                min_width: Val::Px(340.0),
+                max_width: Val::Px(560.0),
+                ..default()
+            },
+            BackgroundColor(palette::UI_PANEL),
+            BorderColor(palette::UI_BORDER),
+        ))
+        .with_children(build);
 }
 
 pub fn refresh_hud(
@@ -199,7 +337,9 @@ pub fn refresh_hud(
         Query<&mut Text, With<RodLabel>>,
         Query<&mut Text, With<LogLabel>>,
     )>,
-    mut buttons: Query<(&ActionButton, &mut BackgroundColor, &mut Node)>,
+    mut buttons: Query<
+        (&ActionButton, &mut BackgroundColor, Option<&PrimaryActionButton>),
+    >,
 ) {
     if let Ok(mut t) = texts.p0().single_mut() {
         **t = world.status_message.clone();
@@ -212,16 +352,28 @@ pub fn refresh_hud(
     }
     if let Ok(mut t) = texts.p3().single_mut() {
         **t = format!(
-            "Rod Skin: {} | Catch Assist: -{:.0}% difficulty",
+            "Rod: {}  ·  Catch assist −{:.0}%",
             world.rod_skin_name(),
             world.rod_catch_difficulty_reduction() * 100.0
         );
     }
     if let Ok(mut t) = texts.p4().single_mut() {
-        **t = world.log_lines.join("\n");
+        let lines: Vec<_> = world
+            .log_lines
+            .iter()
+            .skip(1)
+            .rev()
+            .take(6)
+            .cloned()
+            .collect();
+        **t = if lines.is_empty() {
+            "No catches yet.".to_string()
+        } else {
+            lines.into_iter().rev().collect::<Vec<_>>().join("\n")
+        };
     }
 
-    for (btn, mut bg, mut node) in buttons.iter_mut() {
+    for (btn, mut bg, primary) in buttons.iter_mut() {
         let enabled = match btn.0 {
             Action::Cast => !world.casting && world.stamina >= world.stamina_cost_per_cast(),
             Action::Rest => world.rest_manager.can_rest_now(),
@@ -232,39 +384,80 @@ pub fn refresh_hud(
                 .unwrap_or(false),
             _ => true,
         };
-        bg.0 = if enabled {
-            palette::UI_ACCENT
+
+        bg.0 = if !enabled {
+            palette::UI_DISABLED
+        } else if primary.is_some() {
+            palette::UI_PRIMARY
         } else {
-            Color::srgb(0.28, 0.28, 0.30)
+            palette::UI_ACCENT
         };
-        node.display = if enabled { Display::Flex } else { Display::Flex };
+    }
+}
+
+pub fn update_button_hover(
+    mut buttons: Query<
+        (
+            &Interaction,
+            &ActionButton,
+            &mut BackgroundColor,
+            Option<&PrimaryActionButton>,
+        ),
+        (Changed<Interaction>, With<Button>),
+    >,
+    world: Res<GameWorld>,
+) {
+    for (interaction, btn, mut bg, primary) in buttons.iter_mut() {
+        let enabled = match btn.0 {
+            Action::Cast => !world.casting && world.stamina >= world.stamina_cost_per_cast(),
+            Action::Rest => world.rest_manager.can_rest_now(),
+            Action::Trade => world
+                .trade_offer
+                .as_ref()
+                .map(|o| o.is_active())
+                .unwrap_or(false),
+            _ => true,
+        };
+        if !enabled {
+            continue;
+        }
+
+        bg.0 = match *interaction {
+            Interaction::Hovered | Interaction::Pressed => {
+                if primary.is_some() {
+                    palette::UI_PRIMARY_HOVER
+                } else {
+                    palette::UI_ACCENT_HOVER
+                }
+            }
+            Interaction::None => {
+                if primary.is_some() {
+                    palette::UI_PRIMARY
+                } else {
+                    palette::UI_ACCENT
+                }
+            }
+        };
     }
 }
 
 fn stats_text(world: &GameWorld) -> String {
     let archetype = world.player_character;
-    if world.fish_caught == 0 {
-        return format!(
-            "Gold: {} | Stamina: {}/{} | Rod L{} | Bait L{} | Inventory: {} | {} | Special Mod: {}\n\
-             Caught: 0 | Total Value: 0 | Avg: 0.00 | Avg Last 10: 0.00\n\
-             Least: N/A\nMost: N/A",
-            world.gold,
-            world.stamina,
-            MAX_STAMINA,
-            world.rod_level,
-            world.bait_level,
-            world.inventory.len(),
-            archetype.display_name,
-            world.special_rod_power,
-        );
-    }
-    let average = world.total_catch_value as f64 / world.fish_caught as f64;
+    let average = if world.fish_caught > 0 {
+        world.total_catch_value as f64 / world.fish_caught as f64
+    } else {
+        0.0
+    };
     let avg_ten = world.average_last_ten();
+
     format!(
-        "Gold: {} | Stamina: {}/{} | Rod L{} | Bait L{} | Inventory: {} | {} | Special Mod: {}\n\
-         Caught: {} | Total Value: {}\n\
-         Avg: {:.2} | Avg Last 10: {:.2}\n\
-         Least: {}\nMost: {}",
+        "Gold {}  ·  Stamina {}/{}\n\
+         Rod L{}  ·  Bait L{}  ·  Inv {}\n\
+         {}  ·  Mod {}\n\
+         Caught {}  ·  Value {}\n\
+         Avg {:.1}  ·  Last 10 {:.1}\n\
+         Best: {}\n\
+         Worst: {}",
         world.gold,
         world.stamina,
         MAX_STAMINA,
@@ -277,26 +470,30 @@ fn stats_text(world: &GameWorld) -> String {
         world.total_catch_value,
         average,
         avg_ten,
-        fish_summary(&world.least_value_fish),
         fish_summary(&world.most_value_fish),
+        fish_summary(&world.least_value_fish),
     )
 }
 
 fn fish_summary(fish: &Option<crate::fish::Fish>) -> String {
     match fish {
-        Some(f) => format!("{} / {} ({})", f.value, f.rarity, f.species),
-        None => "N/A".to_string(),
+        Some(f) => format!("{} {} ({}g)", f.rarity, f.species, f.value),
+        None => "—".to_string(),
     }
 }
 
 fn world_text(world: &GameWorld) -> String {
     let rest_cd = if world.rest_manager.can_rest_now() {
-        "0".to_string()
+        "ready".to_string()
     } else {
-        world.rest_manager.seconds_remaining().to_string()
+        format!("{}s", world.rest_manager.seconds_remaining())
     };
     format!(
-        "Location: {} | Weather: {} | Moon: {} | Rest CD: {}s | Buffs(Luck/Value): {}/{} | Rel(M/F/K): {}/{}/{} | {}",
+        "Location: {}\n\
+         Weather: {}  ·  Moon: {}\n\
+         Rest: {}  ·  Luck/Value: {}/{}\n\
+         Relations M/F/K: {}/{}/{}\n\
+         {}",
         world.current_location,
         world.weather,
         world.moon_phase,
@@ -374,37 +571,34 @@ pub fn setup_character_select(mut commands: Commands) {
                 height: Val::Percent(100.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                padding: UiRect::all(Val::Px(16.0)),
                 ..default()
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.65)),
         ))
         .with_children(|overlay| {
-            overlay
-                .spawn((
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        padding: UiRect::all(Val::Px(24.0)),
-                        row_gap: Val::Px(12.0),
-                        ..default()
-                    },
-                    BackgroundColor(palette::UI_PANEL),
-                ))
-                .with_children(|panel| {
-                    spawn_text(panel, "New Save — Character Select", 24.0, palette::UI_TEXT);
-                    for (i, archetype) in PlayerArchetype::ALL.iter().enumerate() {
-                        let cast_pct =
-                            ((1.0 - archetype.cast_speed_multiplier) * 100.0).round() as i32;
-                        let label = format!(
-                            "{} | Gold {} | Rod L{} | Bait L{} | Cast {}%",
-                            archetype.display_name,
-                            archetype.starting_gold,
-                            archetype.starting_rod_level,
-                            archetype.starting_bait_level,
-                            cast_pct,
-                        );
-                        spawn_action_button(panel, &label, Action::SelectCharacter(i));
-                    }
-                });
+            with_overlay_panel(overlay, |panel| {
+                spawn_text(panel, "New Save — Character Select", 22.0, palette::UI_TEXT);
+                spawn_text(
+                    panel,
+                    "Pick an angler to begin your run.",
+                    14.0,
+                    palette::UI_TEXT_DIM,
+                );
+                for (i, archetype) in PlayerArchetype::ALL.iter().enumerate() {
+                    let cast_pct =
+                        ((1.0 - archetype.cast_speed_multiplier) * 100.0).round() as i32;
+                    let label = format!(
+                        "{} — {}g start · Rod L{} · Bait L{} · Cast {}% faster",
+                        archetype.display_name,
+                        archetype.starting_gold,
+                        archetype.starting_rod_level,
+                        archetype.starting_bait_level,
+                        cast_pct,
+                    );
+                    spawn_action_button(panel, &label, Action::SelectCharacter(i));
+                }
+            });
         });
 }
 
@@ -417,36 +611,27 @@ pub fn setup_guide(mut commands: Commands) {
                 height: Val::Percent(100.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                padding: UiRect::all(Val::Px(16.0)),
                 ..default()
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.6)),
         ))
         .with_children(|overlay| {
-            overlay
-                .spawn((
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        padding: UiRect::all(Val::Px(20.0)),
-                        max_width: Val::Px(520.0),
-                        row_gap: Val::Px(10.0),
-                        ..default()
-                    },
-                    BackgroundColor(palette::UI_PANEL),
-                ))
-                .with_children(|panel| {
-                    spawn_text(panel, "Quick Guide", 22.0, palette::UI_TEXT);
-                    panel.spawn(text_bundle(
-                        "1) Cast line -> pull in green zone to catch.\n\
-                         2) Fish go to inventory.\n\
-                         3) Sell inventory or wait for trade offers.\n\
-                         4) Upgrade rod/bait in Shop.\n\
-                         5) Unlock locations via catch milestones.\n\
-                         6) Build trader relationships for better deals.\n\
-                         7) Rest restores stamina with a cooldown.",
-                        15.0,
-                    ));
-                    spawn_action_button(panel, "Got it", Action::DismissGuide);
-                });
+            with_overlay_panel(overlay, |panel| {
+                spawn_text(panel, "Quick Guide", 22.0, palette::UI_TEXT);
+                panel.spawn(text_bundle(
+                    "1. Cast your line, then pull in the green zone.\n\
+                     2. Caught fish go to your inventory.\n\
+                     3. Sell at the shop or wait for timed trade offers.\n\
+                     4. Upgrade rod and bait to improve catches.\n\
+                     5. Unlock new locations by catching more fish.\n\
+                     6. Build trader relationships for better prices.\n\
+                     7. Rest restores stamina on a cooldown.",
+                    14.0,
+                    false,
+                ));
+                spawn_action_button(panel, "Got it", Action::DismissGuide);
+            });
         });
 }
 
@@ -460,7 +645,8 @@ pub fn setup_shop(mut commands: Commands, world: Res<GameWorld>) {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
-                padding: UiRect::all(Val::Px(12.0)),
+                padding: UiRect::all(Val::Px(16.0)),
+                row_gap: Val::Px(10.0),
                 ..default()
             },
             BackgroundColor(Color::srgba(0.04, 0.06, 0.08, 0.88)),
@@ -468,44 +654,44 @@ pub fn setup_shop(mut commands: Commands, world: Res<GameWorld>) {
         .with_children(|overlay| {
             spawn_text(
                 overlay,
-                &format!(
-                    "Harbor Shop | Gold: {} | Discount: {}%",
-                    world.gold, discount
-                ),
+                &format!("Harbor Shop — {}g · {}% discount", world.gold, discount),
                 20.0,
                 palette::UI_TEXT,
             );
-            overlay.spawn((
-                Node {
-                    flex_grow: 1.0,
-                    flex_wrap: FlexWrap::Wrap,
-                    column_gap: Val::Px(8.0),
-                    row_gap: Val::Px(8.0),
-                    ..default()
-                },
-            ))
-            .with_children(|grid| {
-                spawn_action_button(grid, "Rod Upgrade", Action::BuyRod);
-                spawn_action_button(grid, "Bait Upgrade", Action::BuyBait);
-                spawn_action_button(grid, "Luck Buff (+5 casts)", Action::BuyLuck);
-                spawn_action_button(grid, "Value Buff (+5 casts)", Action::BuyValue);
-                spawn_action_button(grid, "Stamina Potion (+30)", Action::BuyStamina);
-                spawn_action_button(grid, "Master Reel Mod", Action::BuySpecialMod);
-                spawn_action_button(
-                    grid,
-                    &format!("Sound: {}", if world.sounds_enabled { "On" } else { "Off" }),
-                    Action::ToggleSound,
-                );
-            });
+            overlay
+                .spawn((
+                    Node {
+                        flex_grow: 1.0,
+                        flex_wrap: FlexWrap::Wrap,
+                        align_content: AlignContent::FlexStart,
+                        column_gap: Val::Px(8.0),
+                        row_gap: Val::Px(8.0),
+                        ..default()
+                    },
+                    inset_panel_inner(),
+                ))
+                .with_children(|grid| {
+                    spawn_action_button(grid, "Rod Upgrade", Action::BuyRod);
+                    spawn_action_button(grid, "Bait Upgrade", Action::BuyBait);
+                    spawn_action_button(grid, "Luck Buff (+5)", Action::BuyLuck);
+                    spawn_action_button(grid, "Value Buff (+5)", Action::BuyValue);
+                    spawn_action_button(grid, "Stamina (+30)", Action::BuyStamina);
+                    spawn_action_button(grid, "Master Reel Mod", Action::BuySpecialMod);
+                    spawn_action_button(
+                        grid,
+                        &format!("Sound: {}", if world.sounds_enabled { "On" } else { "Off" }),
+                        Action::ToggleSound,
+                    );
+                });
             let mut dialogue_rng = rand::rng();
             spawn_text(
                 overlay,
                 &format!(
-                    "Featured: {} — \"{}\"",
+                    "{} says: \"{}\"",
                     featured.display_name,
                     featured.random_dialogue(&mut dialogue_rng)
                 ),
-                16.0,
+                14.0,
                 palette::UI_TEXT_DIM,
             );
             spawn_action_button(overlay, "Close Shop", Action::CloseOverlay);
@@ -514,11 +700,19 @@ pub fn setup_shop(mut commands: Commands, world: Res<GameWorld>) {
 
 pub fn setup_location_select(mut commands: Commands, world: Res<GameWorld>) {
     let locations = [
-        ("Pond", true),
-        ("River", world.is_location_unlocked("River")),
-        ("MistyMarsh", world.is_location_unlocked("MistyMarsh")),
-        ("Ocean", world.is_location_unlocked("Ocean")),
-        ("VolcanicBay", world.is_location_unlocked("VolcanicBay")),
+        ("Pond", "Starter waters", true),
+        ("River", "12 catches · 450g", world.is_location_unlocked("River")),
+        (
+            "Misty Marsh",
+            "20 catches · 900g",
+            world.is_location_unlocked("MistyMarsh"),
+        ),
+        ("Ocean", "30 catches · 1500g", world.is_location_unlocked("Ocean")),
+        (
+            "Volcanic Bay",
+            "60 catches · 4200g",
+            world.is_location_unlocked("VolcanicBay"),
+        ),
     ];
     commands
         .spawn((
@@ -528,33 +722,24 @@ pub fn setup_location_select(mut commands: Commands, world: Res<GameWorld>) {
                 height: Val::Percent(100.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                padding: UiRect::all(Val::Px(16.0)),
                 ..default()
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
         ))
         .with_children(|overlay| {
-            overlay
-                .spawn((
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        padding: UiRect::all(Val::Px(20.0)),
-                        row_gap: Val::Px(8.0),
-                        ..default()
-                    },
-                    BackgroundColor(palette::UI_PANEL),
-                ))
-                .with_children(|panel| {
-                    spawn_text(panel, "Choose Location", 22.0, palette::UI_TEXT);
-                    for (i, (name, unlocked)) in locations.iter().enumerate() {
-                        let suffix = if *unlocked {
-                            String::new()
-                        } else {
-                            " [Locked]".to_string()
-                        };
-                        spawn_action_button(panel, &format!("{}{}", name, suffix), Action::SelectLocation(i));
-                    }
-                    spawn_action_button(panel, "Cancel", Action::CloseOverlay);
-                });
+            with_overlay_panel(overlay, |panel| {
+                spawn_text(panel, "Choose Location", 22.0, palette::UI_TEXT);
+                for (i, (name, req, unlocked)) in locations.iter().enumerate() {
+                    let label = if *unlocked {
+                        format!("{name} — {req}")
+                    } else {
+                        format!("{name} — locked ({req})")
+                    };
+                    spawn_action_button(panel, &label, Action::SelectLocation(i));
+                }
+                spawn_action_button(panel, "Cancel", Action::CloseOverlay);
+            });
         });
 }
 
@@ -567,32 +752,29 @@ pub fn setup_trade_trader_select(mut commands: Commands) {
                 height: Val::Percent(100.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                padding: UiRect::all(Val::Px(16.0)),
                 ..default()
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
         ))
         .with_children(|overlay| {
-            overlay
-                .spawn((
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        padding: UiRect::all(Val::Px(20.0)),
-                        row_gap: Val::Px(8.0),
-                        ..default()
-                    },
-                    BackgroundColor(palette::UI_PANEL),
-                ))
-                .with_children(|panel| {
-                    spawn_text(panel, "Choose Trader", 22.0, palette::UI_TEXT);
-                    for (i, trader) in TraderNpc::ALL.iter().enumerate() {
-                        spawn_action_button(
-                            panel,
-                            trader.display_name,
-                            Action::SelectTrader(i),
-                        );
-                    }
-                    spawn_action_button(panel, "Cancel", Action::CloseOverlay);
-                });
+            with_overlay_panel(overlay, |panel| {
+                spawn_text(panel, "Choose Trader", 22.0, palette::UI_TEXT);
+                spawn_text(
+                    panel,
+                    "Better relationships improve offer rates.",
+                    14.0,
+                    palette::UI_TEXT_DIM,
+                );
+                for (i, trader) in TraderNpc::ALL.iter().enumerate() {
+                    spawn_action_button(
+                        panel,
+                        trader.display_name,
+                        Action::SelectTrader(i),
+                    );
+                }
+                spawn_action_button(panel, "Cancel", Action::CloseOverlay);
+            });
         });
 }
 
