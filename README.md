@@ -1,4 +1,4 @@
-# Fishing Game (Rust + Bevy 2D)
+# Reelms
 
 A fishing RPG built with Rust and Bevy 2D.
 
