@@ -50,3 +50,4 @@ This is a base starter project for a Fishing Game:
 - Save/load:
   - Use **Save** button or **Save and Exit** prompt.
   - Progress stored at `save/progress.json`.
+
