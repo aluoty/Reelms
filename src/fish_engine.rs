@@ -19,27 +19,38 @@ pub fn generate_fish(
     let (species_pool, location_exotics, weight_min, weight_max) = match location {
         "River" => (
             vec![
-                "Carp", "Salmon", "Trout", "Catfish", "Pike", "Bass",
+                "Carp", "Salmon", "Trout", "Catfish", "Pike", "Bass", "Walleye", "Sturgeon",
             ],
             vec!["GoldenKoi", "SilverEel"],
             0.8,
             15.0,
         ),
         "Ocean" => (
-            vec!["Tuna", "Mackerel", "Swordfish", "Marlin", "Bass"],
-            vec!["BluefinTitan", "Glowfin"],
+            vec![
+                "Tuna", "Mackerel", "Swordfish", "Marlin", "Bass", "Snapper", "Flounder",
+                "Barracuda",
+            ],
+            vec!["BluefinTitan", "Glowfin", "Anglerfish"],
             1.5,
             30.0,
         ),
         "VolcanicBay" => (
-            vec!["LavaSnapper", "AshGrouper", "Tuna", "Marlin"],
+            vec!["LavaSnapper", "AshGrouper", "Tuna", "Marlin", "Barracuda"],
             vec!["MagmaRay", "PhoenixKoi"],
             2.5,
             35.0,
         ),
+        "MistyMarsh" => (
+            vec!["ReedMinnow", "MistyDarter", "Perch", "Catfish", "Pike", "Bluegill"],
+            vec!["CrystalCarp", "GlowPike"],
+            0.6,
+            12.0,
+        ),
         _ => (
-            vec!["Carp", "Salmon", "Trout", "Catfish", "Pike"],
-            vec![],
+            vec![
+                "Carp", "Salmon", "Trout", "Catfish", "Pike", "Perch", "Bluegill", "ReedMinnow",
+            ],
+            vec!["GoldenKoi"],
             0.4,
             11.0,
         ),
@@ -71,13 +82,13 @@ pub fn generate_fish(
     let mut species = species_pool[rng.random_range(0..species_pool.len())].to_string();
 
     if !location_exotics.is_empty() {
-        let mut chance = 6;
-        if location == "Ocean" {
-            chance = 8;
-        }
-        if location == "VolcanicBay" {
-            chance = 12;
-        }
+        let mut chance = match location {
+            "Ocean" => 8,
+            "VolcanicBay" => 12,
+            "MistyMarsh" => 10,
+            "Pond" => 4,
+            _ => 6,
+        };
         chance += bait_level - 1;
         if moon == "BlueMoon" {
             chance += 5;
@@ -108,6 +119,7 @@ pub fn generate_fish(
         "River" => 1.2,
         "Ocean" => 1.55,
         "VolcanicBay" => 2.1,
+        "MistyMarsh" => 1.35,
         _ => 1.0,
     };
 

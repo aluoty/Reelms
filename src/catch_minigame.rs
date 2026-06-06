@@ -1,8 +1,12 @@
 use bevy::prelude::*;
+use bevy::sprite::{ColorMaterial, MeshMaterial2d};
 use rand::Rng;
 
 use crate::fish::Fish;
 use crate::fish_engine::rarity_rank;
+use crate::models::{
+    build_fish_part_meshes, build_rod_meshes, fish_model_for_species, palette, rarity_glow_color,
+};
 use crate::world::GameWorld;
 
 #[derive(Resource)]
@@ -126,9 +130,6 @@ fn zone_score(marker_pos: f64, effective_difficulty: f64, rng: &mut impl Rng) ->
 pub struct CatchMinigameRoot;
 
 #[derive(Component)]
-pub struct CatchWaterScene;
-
-#[derive(Component)]
 pub struct CatchBarRoot;
 
 #[derive(Component)]
@@ -146,8 +147,13 @@ pub struct CatchFishSprite;
 #[derive(Component)]
 pub struct CatchRodSprite;
 
+#[derive(Component)]
+pub struct CatchWaterWorld;
+
 pub fn setup_catch_minigame(
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     world: Res<GameWorld>,
     mut next_state: ResMut<NextState<crate::GameScreen>>,
 ) {
@@ -157,11 +163,84 @@ pub fn setup_catch_minigame(
     };
 
     let minigame = CatchMinigame::new(
-        fish,
+        fish.clone(),
         world.rod_level,
         world.rod_catch_difficulty_reduction(),
     );
     commands.insert_resource(minigame);
+
+    let water_color = match world.current_location.as_str() {
+        "River" => palette::WATER_RIVER,
+        "Ocean" => palette::WATER_OCEAN,
+        "VolcanicBay" => palette::WATER_VOLCANIC,
+        "MistyMarsh" => palette::WATER_MARSH,
+        _ => palette::WATER_POND,
+    };
+
+    commands.spawn((
+        CatchWaterWorld,
+        Mesh2d(meshes.add(Rectangle::new(980.0, 280.0))),
+        MeshMaterial2d(materials.add(ColorMaterial::from_color(water_color))),
+        Transform::from_xyz(0.0, -80.0, -2.0),
+    ));
+    commands.spawn((
+        CatchWaterWorld,
+        Mesh2d(meshes.add(Rectangle::new(980.0, 60.0))),
+        MeshMaterial2d(materials.add(ColorMaterial::from_color(palette::GRASS))),
+        Transform::from_xyz(0.0, 110.0, -1.0),
+    ));
+
+    let rod_entity = commands
+        .spawn((
+            CatchRodSprite,
+            CatchWaterWorld,
+            Transform::from_xyz(-320.0, -40.0, 3.0).with_rotation(Quat::from_rotation_z(-0.18)),
+            Visibility::default(),
+        ))
+        .id();
+    commands.entity(rod_entity).with_children(|rod_root| {
+        for (mesh, color, offset, scale) in build_rod_meshes() {
+            rod_root.spawn((
+                Mesh2d(meshes.add(mesh)),
+                MeshMaterial2d(materials.add(ColorMaterial::from_color(color))),
+                Transform {
+                    translation: offset,
+                    scale: Vec3::splat(scale),
+                    ..default()
+                },
+            ));
+        }
+    });
+
+    let fish_entity = commands
+        .spawn((
+            CatchFishSprite,
+            CatchWaterWorld,
+            Transform::from_xyz(-180.0, -60.0, 4.0),
+            Visibility::default(),
+        ))
+        .id();
+    commands.entity(fish_entity).with_children(|fish_root| {
+        let model = fish_model_for_species(&fish.species);
+        if let Some(glow) = rarity_glow_color(&fish.rarity) {
+            fish_root.spawn((
+                Mesh2d(meshes.add(Circle::new(42.0 * model.scale))),
+                MeshMaterial2d(materials.add(ColorMaterial::from_color(glow))),
+                Transform::from_xyz(0.0, 0.0, -1.0),
+            ));
+        }
+        for (mesh, color, offset, scale) in build_fish_part_meshes(&model) {
+            fish_root.spawn((
+                Mesh2d(meshes.add(mesh)),
+                MeshMaterial2d(materials.add(ColorMaterial::from_color(color))),
+                Transform {
+                    translation: offset,
+                    scale: Vec3::splat(scale),
+                    ..default()
+                },
+            ));
+        }
+    });
 
     commands
         .spawn((
@@ -172,16 +251,16 @@ pub fn setup_catch_minigame(
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.08, 0.12, 0.18)),
+            BackgroundColor(Color::srgba(0.06, 0.08, 0.10, 0.55)),
         ))
         .with_children(|root| {
             root.spawn((
-                Text::new("Pulling..."),
+                Text::new(format!("Pulling {} {}...", fish.rarity, fish.species)),
                 TextFont {
-                    font_size: 28.0,
+                    font_size: 26.0,
                     ..default()
                 },
-                TextColor(Color::WHITE),
+                TextColor(palette::UI_TEXT),
                 Node {
                     margin: UiRect::all(Val::Px(12.0)),
                     ..default()
@@ -194,47 +273,12 @@ pub fn setup_catch_minigame(
                     font_size: 16.0,
                     ..default()
                 },
-                TextColor(Color::srgb(0.8, 0.85, 0.9)),
+                TextColor(palette::UI_TEXT_DIM),
                 Node {
                     margin: UiRect::horizontal(Val::Px(12.0)),
                     ..default()
                 },
             ));
-
-            root.spawn((
-                CatchWaterScene,
-                Node {
-                    width: Val::Percent(95.0),
-                    height: Val::Px(220.0),
-                    margin: UiRect::all(Val::Px(12.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.36, 0.61, 0.82)),
-            ))
-            .with_children(|scene| {
-                scene.spawn((
-                    CatchRodSprite,
-                    Node {
-                        position_type: PositionType::Absolute,
-                        left: Val::Px(35.0),
-                        bottom: Val::Px(34.0),
-                        width: Val::Px(200.0),
-                        height: Val::Px(48.0),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.55, 0.35, 0.15)),
-                ));
-                scene.spawn((
-                    CatchFishSprite,
-                    Node {
-                        position_type: PositionType::Absolute,
-                        width: Val::Px(32.0),
-                        height: Val::Px(16.0),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.92, 0.94, 0.96)),
-                ));
-            });
 
             root.spawn((
                 CatchBarRoot,
@@ -295,7 +339,7 @@ pub fn setup_catch_minigame(
                         font_size: 20.0,
                         ..default()
                     },
-                    TextColor(Color::WHITE),
+                    TextColor(palette::UI_TEXT),
                     CatchProgressLabel,
                 ));
                 row.spawn((
@@ -304,7 +348,7 @@ pub fn setup_catch_minigame(
                         padding: UiRect::axes(Val::Px(16.0), Val::Px(10.0)),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.2, 0.45, 0.75)),
+                    BackgroundColor(palette::UI_ACCENT),
                     PullNowButton,
                 ))
                 .with_child((
@@ -313,7 +357,7 @@ pub fn setup_catch_minigame(
                         font_size: 18.0,
                         ..default()
                     },
-                    TextColor(Color::WHITE),
+                    TextColor(palette::UI_TEXT),
                 ));
             });
         });
@@ -331,8 +375,10 @@ pub fn catch_minigame_update(
     mut nodes: ParamSet<(
         Query<&mut Node, With<CatchMarker>>,
         Query<&mut Node, With<CatchGreenZone>>,
-        Query<&mut Node, With<CatchFishSprite>>,
-        Query<&mut Node, With<CatchRodSprite>>,
+    )>,
+    mut transforms: ParamSet<(
+        Query<&mut Transform, With<CatchFishSprite>>,
+        Query<&mut Transform, With<CatchRodSprite>>,
     )>,
     mut progress_q: Query<&mut Text, With<CatchProgressLabel>>,
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -345,6 +391,7 @@ pub fn catch_minigame_update(
     mut next_state: ResMut<NextState<crate::GameScreen>>,
     mut commands: Commands,
     catch_root: Query<Entity, With<CatchMinigameRoot>>,
+    water_world: Query<Entity, With<CatchWaterWorld>>,
 ) {
     minigame.tick_marker(time.delta_secs());
 
@@ -358,16 +405,21 @@ pub fn catch_minigame_update(
         node.left = Val::Percent((50.0 - green_pct / 2.0).max(0.0));
     }
 
-    for mut node in nodes.p2().iter_mut() {
-        let x = 20.0 + (minigame.marker_position * 60.0) as f32;
-        node.left = Val::Percent(x);
-        node.bottom = Val::Px(40.0 + (minigame.tick as f32 * 0.28).sin() * 6.0);
+    let fish_x = -280.0 + (minigame.marker_position * 420.0) as f32;
+    let fish_bob = (minigame.tick as f32 * 0.28).sin() * 8.0;
+    for mut transform in transforms.p0().iter_mut() {
+        transform.translation.x = fish_x;
+        transform.translation.y = -60.0 + fish_bob;
+        transform.rotation = Quat::from_rotation_z(
+            (minigame.marker_position as f32 - 0.5) * 0.35 + (minigame.tick as f32 * 0.05).sin() * 0.08,
+        );
     }
 
-    for mut node in nodes.p3().iter_mut() {
-        let angle_offset = if minigame.pull_frames > 0 { -12.0 } else { 0.0 };
-        let tilt = -11.0 + (minigame.marker_position * 24.0) as f32 + angle_offset;
-        node.bottom = Val::Px(34.0 + tilt.abs() * 0.2);
+    let pull_tilt = if minigame.pull_frames > 0 { -0.22 } else { -0.18 };
+    let rod_tilt = pull_tilt + (minigame.marker_position as f32 - 0.5) * 0.12;
+    for mut transform in transforms.p1().iter_mut() {
+        transform.rotation = Quat::from_rotation_z(rod_tilt);
+        transform.translation.y = -40.0 + minigame.pull_frames as f32 * 0.4;
     }
 
     for mut text in progress_q.iter_mut() {
@@ -402,6 +454,9 @@ pub fn catch_minigame_update(
         for entity in catch_root.iter() {
             commands.entity(entity).despawn();
         }
+        for entity in water_world.iter() {
+            commands.entity(entity).despawn();
+        }
         commands.remove_resource::<CatchMinigame>();
         next_state.set(crate::GameScreen::Main);
     }
@@ -410,10 +465,14 @@ pub fn catch_minigame_update(
 pub fn cleanup_catch_minigame(
     mut commands: Commands,
     catch_root: Query<Entity, With<CatchMinigameRoot>>,
+    water_world: Query<Entity, With<CatchWaterWorld>>,
     minigame: Option<Res<CatchMinigame>>,
 ) {
     if minigame.is_some() {
         for entity in catch_root.iter() {
+            commands.entity(entity).despawn();
+        }
+        for entity in water_world.iter() {
             commands.entity(entity).despawn();
         }
         commands.remove_resource::<CatchMinigame>();

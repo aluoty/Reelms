@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::archetype::PlayerArchetype;
+use crate::models::palette;
 use crate::save::{load_progress, save_progress, SAVE_PATH};
 use crate::trader::TraderNpc;
 use crate::world::{GameWorld, MAX_STAMINA};
@@ -75,10 +76,11 @@ pub fn setup_main_ui(mut commands: Commands, mut world: ResMut<GameWorld>, mut r
                 row_gap: Val::Px(6.0),
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.12, 0.14, 0.18)),
+            BackgroundColor(palette::UI_PANEL),
         ))
         .with_children(|root| {
-            spawn_text(root, "Fishing Game", 26.0, Color::WHITE);
+            spawn_text(root, "Reelms", 28.0, palette::UI_TEXT);
+            spawn_text(root, "Low Poly Fishing RPG", 14.0, palette::UI_TEXT_DIM);
             root.spawn((
                 StatusLabel,
                 text_bundle("Ready to fish.", 18.0),
@@ -96,7 +98,7 @@ pub fn setup_main_ui(mut commands: Commands, mut world: ResMut<GameWorld>, mut r
                     padding: UiRect::all(Val::Px(8.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgb(0.08, 0.09, 0.11)),
+                BackgroundColor(palette::UI_PANEL_DARK),
             ))
             .with_children(|log_panel| {
                 log_panel.spawn((
@@ -106,7 +108,7 @@ pub fn setup_main_ui(mut commands: Commands, mut world: ResMut<GameWorld>, mut r
                         font_size: 14.0,
                         ..default()
                     },
-                    TextColor(Color::srgb(0.85, 0.88, 0.92)),
+                    TextColor(palette::UI_TEXT_DIM),
                     Node {
                         width: Val::Percent(100.0),
                         ..default()
@@ -148,7 +150,7 @@ fn text_bundle(content: &str, size: f32) -> impl Bundle {
             font_size: size,
             ..default()
         },
-        TextColor(Color::srgb(0.9, 0.92, 0.95)),
+        TextColor(palette::UI_TEXT),
         Node {
             width: Val::Percent(100.0),
             ..default()
@@ -176,7 +178,7 @@ fn spawn_action_button(parent: &mut ChildSpawnerCommands, label: &str, action: A
                 padding: UiRect::axes(Val::Px(10.0), Val::Px(8.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.22, 0.38, 0.58)),
+            BackgroundColor(palette::UI_ACCENT),
         ))
         .with_child((
             Text::new(label.to_string()),
@@ -184,7 +186,7 @@ fn spawn_action_button(parent: &mut ChildSpawnerCommands, label: &str, action: A
                 font_size: 15.0,
                 ..default()
             },
-            TextColor(Color::WHITE),
+            TextColor(palette::UI_TEXT),
         ));
 }
 
@@ -231,7 +233,7 @@ pub fn refresh_hud(
             _ => true,
         };
         bg.0 = if enabled {
-            Color::srgb(0.22, 0.38, 0.58)
+            palette::UI_ACCENT
         } else {
             Color::srgb(0.28, 0.28, 0.30)
         };
@@ -374,7 +376,7 @@ pub fn setup_character_select(mut commands: Commands) {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.75)),
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.65)),
         ))
         .with_children(|overlay| {
             overlay
@@ -385,10 +387,10 @@ pub fn setup_character_select(mut commands: Commands) {
                         row_gap: Val::Px(12.0),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.15, 0.18, 0.24)),
+                    BackgroundColor(palette::UI_PANEL),
                 ))
                 .with_children(|panel| {
-                    spawn_text(panel, "New Save - Character Select", 24.0, Color::WHITE);
+                    spawn_text(panel, "New Save — Character Select", 24.0, palette::UI_TEXT);
                     for (i, archetype) in PlayerArchetype::ALL.iter().enumerate() {
                         let cast_pct =
                             ((1.0 - archetype.cast_speed_multiplier) * 100.0).round() as i32;
@@ -429,10 +431,10 @@ pub fn setup_guide(mut commands: Commands) {
                         row_gap: Val::Px(10.0),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.14, 0.17, 0.22)),
+                    BackgroundColor(palette::UI_PANEL),
                 ))
                 .with_children(|panel| {
-                    spawn_text(panel, "Quick Guide", 22.0, Color::WHITE);
+                    spawn_text(panel, "Quick Guide", 22.0, palette::UI_TEXT);
                     panel.spawn(text_bundle(
                         "1) Cast line -> pull in green zone to catch.\n\
                          2) Fish go to inventory.\n\
@@ -461,7 +463,7 @@ pub fn setup_shop(mut commands: Commands, world: Res<GameWorld>) {
                 padding: UiRect::all(Val::Px(12.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.05, 0.07, 0.10, 0.92)),
+            BackgroundColor(Color::srgba(0.04, 0.06, 0.08, 0.88)),
         ))
         .with_children(|overlay| {
             spawn_text(
@@ -471,7 +473,7 @@ pub fn setup_shop(mut commands: Commands, world: Res<GameWorld>) {
                     world.gold, discount
                 ),
                 20.0,
-                Color::WHITE,
+                palette::UI_TEXT,
             );
             overlay.spawn((
                 Node {
@@ -504,7 +506,7 @@ pub fn setup_shop(mut commands: Commands, world: Res<GameWorld>) {
                     featured.random_dialogue(&mut dialogue_rng)
                 ),
                 16.0,
-                Color::srgb(0.8, 0.85, 0.9),
+                palette::UI_TEXT_DIM,
             );
             spawn_action_button(overlay, "Close Shop", Action::CloseOverlay);
         });
@@ -514,6 +516,7 @@ pub fn setup_location_select(mut commands: Commands, world: Res<GameWorld>) {
     let locations = [
         ("Pond", true),
         ("River", world.is_location_unlocked("River")),
+        ("MistyMarsh", world.is_location_unlocked("MistyMarsh")),
         ("Ocean", world.is_location_unlocked("Ocean")),
         ("VolcanicBay", world.is_location_unlocked("VolcanicBay")),
     ];
@@ -538,10 +541,10 @@ pub fn setup_location_select(mut commands: Commands, world: Res<GameWorld>) {
                         row_gap: Val::Px(8.0),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.14, 0.17, 0.22)),
+                    BackgroundColor(palette::UI_PANEL),
                 ))
                 .with_children(|panel| {
-                    spawn_text(panel, "Choose Location", 22.0, Color::WHITE);
+                    spawn_text(panel, "Choose Location", 22.0, palette::UI_TEXT);
                     for (i, (name, unlocked)) in locations.iter().enumerate() {
                         let suffix = if *unlocked {
                             String::new()
@@ -577,10 +580,10 @@ pub fn setup_trade_trader_select(mut commands: Commands) {
                         row_gap: Val::Px(8.0),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.14, 0.17, 0.22)),
+                    BackgroundColor(palette::UI_PANEL),
                 ))
                 .with_children(|panel| {
-                    spawn_text(panel, "Choose Trader", 22.0, Color::WHITE);
+                    spawn_text(panel, "Choose Trader", 22.0, palette::UI_TEXT);
                     for (i, trader) in TraderNpc::ALL.iter().enumerate() {
                         spawn_action_button(
                             panel,
@@ -648,7 +651,7 @@ pub fn handle_overlay_buttons(
                 next_state.set(crate::GameScreen::Main);
             }
             Action::SelectLocation(i) => {
-                let names = ["Pond", "River", "Ocean", "VolcanicBay"];
+                let names = ["Pond", "River", "MistyMarsh", "Ocean", "VolcanicBay"];
                 if let Some(name) = names.get(i) {
                     world.set_location(name);
                 }

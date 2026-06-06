@@ -295,6 +295,7 @@ impl GameWorld {
         match location {
             "Pond" => true,
             "River" => self.fish_caught >= 12 && self.total_catch_value >= 450,
+            "MistyMarsh" => self.fish_caught >= 20 && self.total_catch_value >= 900,
             "Ocean" => self.fish_caught >= 30 && self.total_catch_value >= 1500,
             "VolcanicBay" => self.fish_caught >= 60 && self.total_catch_value >= 4200,
             _ => false,
@@ -305,8 +306,17 @@ impl GameWorld {
         if self.current_location == "River" && !self.is_location_unlocked("River") {
             self.current_location = "Pond".to_string();
         }
-        if self.current_location == "Ocean" && !self.is_location_unlocked("Ocean") {
+        if self.current_location == "MistyMarsh" && !self.is_location_unlocked("MistyMarsh") {
             self.current_location = if self.is_location_unlocked("River") {
+                "River".to_string()
+            } else {
+                "Pond".to_string()
+            };
+        }
+        if self.current_location == "Ocean" && !self.is_location_unlocked("Ocean") {
+            self.current_location = if self.is_location_unlocked("MistyMarsh") {
+                "MistyMarsh".to_string()
+            } else if self.is_location_unlocked("River") {
                 "River".to_string()
             } else {
                 "Pond".to_string()

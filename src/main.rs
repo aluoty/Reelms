@@ -2,8 +2,10 @@ mod archetype;
 mod catch_minigame;
 mod fish;
 mod fish_engine;
+mod models;
 mod rest;
 mod save;
+mod scene;
 mod trader;
 mod ui;
 mod world;
@@ -15,6 +17,7 @@ use rand::SeedableRng;
 use catch_minigame::{
     catch_minigame_update, cleanup_catch_minigame, setup_catch_minigame,
 };
+use scene::{animate_water_shimmer, refresh_world_scene, setup_world_scene, SceneState};
 use ui::{
     cast_tick, check_startup_flow, cleanup_overlay, handle_main_buttons, handle_overlay_buttons,
     refresh_hud, setup_character_select, setup_guide, setup_location_select, setup_main_ui,
@@ -41,7 +44,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Fishing Game".to_string(),
+                title: "Reelms — Low Poly Fishing".to_string(),
                 resolution: (980., 560.).into(),
                 ..default()
             }),
@@ -50,12 +53,15 @@ fn main() {
         .init_state::<GameScreen>()
         .insert_resource(GameWorld::default())
         .insert_resource(GameRng(StdRng::from_os_rng()))
-        .add_systems(Startup, setup_main_ui)
+        .insert_resource(SceneState::default())
+        .add_systems(Startup, (setup_world_scene, setup_main_ui).chain())
         .add_systems(
             Update,
             (
                 check_startup_flow,
                 refresh_hud,
+                refresh_world_scene,
+                animate_water_shimmer,
                 handle_main_buttons,
                 cast_tick,
             )
