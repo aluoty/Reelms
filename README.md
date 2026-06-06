@@ -1,54 +1,67 @@
-# Fishing Game Scratch (Java UI + C++ Engine)
+# Fishing Game (Rust + Bevy 2D)
 
-This is a base starter project for a Fishing Game:
+A fishing RPG built with Rust and Bevy 2D.
 
-- Java (`Swing`) for the UI and game loop interaction.
-- C++ for fish generation and algorithmic logic.
+## Game Systems
+
+- **Cast → catch minigame → inventory**: Fish are stored, not auto-sold.
+- **Economy**: Sell at shop price, or use timed **trade offers** with better multipliers.
+- **Progression**: Stamina per cast, **rest** cooldown, rod/bait upgrades, luck/value buffs.
+- **World**: Locations unlock by catch count and total value; weather and moon phase affect rolls.
+- **Social**: Three traders (Marina, Broker Finn, Tinker Kai) with relationship-based shop discounts and trade bonuses.
+- **Characters**: Alex, Tommy, Ryan archetypes with different starting stats and modifiers.
+- **Save/load**: `save/progress.json`
 
 ## Project Structure
 
-- `java/src/com/fishinggame/Main.java` - Java UI entry point.
-- `cpp/fish_engine.cpp` - C++ fish generation engine.
-- `build.sh` - Builds Java classes and C++ binary.
-- `run.sh` - Runs the Java game UI.
+```
+src/
+  main.rs           — Bevy app, game states
+  world.rs          — GameWorld resource (all player/world state)
+  fish_engine.rs    — Fish generation
+  catch_minigame.rs — Green/yellow/red pull minigame
+  ui.rs             — HUD, shop, locations, character select
+  save.rs           — JSON save/load
+  archetype.rs      — Player archetypes
+  trader.rs         — Trader NPCs
+  rest.rs           — Rest cooldown manager
+shell.nix           — Nix shell with Bevy Linux dependencies
+```
 
 ## Requirements
 
-- JDK 17+ (or JDK 11+ with minor adjustments)
-- `g++` (C++17 compatible)
-- Linux/macOS shell
+- Rust 1.85+ (edition 2021)
+- Linux graphics stack (Vulkan or compatible)
+- For Nix users: `nix-shell` provides all Bevy system libraries
 
-## Build
+## Build & Run
 
-```bash
-./build.sh
-```
-
-## Run
+### With Nix (recommended on NixOS / nix environments)
 
 ```bash
-./run.sh
+nix-shell --run "cargo run"
 ```
 
-## Gameplay (Expanded)
+### Without Nix
 
-- Click **Cast Line** to catch fish into your inventory (not auto-sold).
-- Economy loop:
-  - **Sell Inventory** at shop price (always available).
-  - **Trade Offer** can pay better multipliers, but expires quickly.
-- Progression:
-  - **Stamina** cost per cast, recover via **Rest** or stamina potion.
-  - Buy **rod** and **bait** upgrades in **Shop** for better catch outcomes.
-  - Buy **buffs** (luck/value) with gold.
-- World systems:
-  - **Locations** unlock when fish count and total catch value thresholds are met.
-  - Each location has shared fish + location-exclusive exotic fish.
-  - **Weather** and **moon phase** affect rarity/value and cast time.
-    - Rain shortens cast time and stamina cost.
-    - Blue Moon gives strong positive rarity/value pressure.
-    - Blood Moon gives negative pressure.
-- Save/load:
-  - Use **Save** button or **Save and Exit** prompt.
-  - Progress stored at `save/progress.json`.
+Install Bevy Linux dependencies (see [Bevy docs](https://github.com/bevyengine/bevy/blob/main/docs/linux_dependencies.md)), then:
 
+```bash
+cargo run
+```
 
+Release build:
+
+```bash
+cargo run --release
+```
+
+## Gameplay
+
+1. **Cast Line** — waits for cast time, then opens the pull minigame (SPACE or Pull Now in green zone).
+2. **Sell Inventory** — sell all caught fish at base shop price.
+3. **Trade Offer** — sell matching-rarity fish at a timed multiplier; generate offers via **New Trade Offer**.
+4. **Shop** — rod/bait upgrades, buffs, stamina potion, special reel mod (needs Tinker Kai relationship).
+5. **Locations** — Pond → River → Ocean → VolcanicBay (unlock by milestones).
+6. **Rest** — +25 stamina with a cooldown.
+7. **Save** — writes progress to `save/progress.json`.
